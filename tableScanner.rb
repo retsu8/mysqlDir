@@ -12,7 +12,8 @@ rescue Mysql::Error => e
 	puts e.error
 	puts e.errno
 
-Dir.foreach('/path/to/dir') do |scan|
+dir = Dir.pwd
+Dir.foreach(dir) do |scan|
 	next if item == '.' or item == ".."
 	name =File.realpath(scan)
 	con.push(name)
