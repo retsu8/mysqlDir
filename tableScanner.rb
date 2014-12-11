@@ -5,12 +5,10 @@ require 'pathname'
 
 # Grab current directory for scanning
 puts "Getting current directory"
-dir = Pathname.pwd()
-dir = Pathname.new(dir)
+dir = Pathname.new(Pathname.pwd())
 
-begin
-	puts "Building new array for data"
-	arrSql = Array.new() {Array.new(4)}
+puts "Building new array for data"
+arrSql = Array.new() {Array.new(4)}
 	
 # Scan directory and add information to array for each file found
 puts "Scanning for directory information"
@@ -26,5 +24,3 @@ Dir.foreach(dir) do |item|
 	arrSql.push size
 end
 p arrSql
-
-end
