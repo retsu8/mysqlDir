@@ -3,13 +3,17 @@
 require 'mysql'
 require 'pathname'
 
+# Grab current directory for scanning
+puts "Getting current directory"
 dir = Pathname.pwd()
 dir = Pathname.new(dir)
 
-print dir
 begin
+	puts "Building new array for data"
 	arrSql = Array.new() {Array.new(4)}
-n=0
+	
+# Scan directory and add information to array for each file found
+puts "Scanning for directory information"
 Dir.foreach(dir) do |item|
 	next if item == '.' or item == ".."
 	name =File.realpath(item)
