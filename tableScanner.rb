@@ -1,30 +1,26 @@
 #!/usr/bin/ruby
 
 require 'mysql'
+require 'pathname'
 
+dir = Pathname.pwd()
+dir = Pathname.new(dir)
+
+print dir
 begin
-	con = Mysql.new 'localhost','user1','enter'
-	puts con.get_server_info
-	rs = con.query 'SELECT VERSION()'
-	puts rs.fetch_row
-	
-rescue Mysql::Error => e
-	puts e.error
-	puts e.errno
-
-dir = Dir.pwd
-Dir.foreach(dir) do |scan|
+	arrSql = Array.new() {Array.new(4)}
+n=0
+Dir.foreach(dir) do |item|
 	next if item == '.' or item == ".."
-	name =File.realpath(scan)
-	con.push(name)
-	owner =File.owned?(scan)
-	con.push(owner)
-	ext = File.extname(scan)
-	con.push(ext)
-	size = File.size(scan)
-	con.push(size)
+	name =File.realpath(item)
+	arrSql.push name
+	owner =File.owned?(item)
+	arrSql.push owner
+	ext = File.extname(item)
+	arrSql.push ext
+	size = File.size(item)
+	arrSql.push size
 end
+p arrSql
 
-ensure
-	con.close if con
 end
