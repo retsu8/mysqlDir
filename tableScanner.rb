@@ -2,6 +2,7 @@
 
 require 'mysql'
 require 'pathname'
+require 'digest'
 
 # Grab current directory for scanning
 puts "Getting current directory"
@@ -22,5 +23,8 @@ Dir.foreach(dir) do |item|
 	arrSql.push ext
 	size = File.size(item)
 	arrSql.push size
+	hash = Digest::MD5.hexdigest(item)
+	puts hash
+	arrSql.push hash
 end
 p arrSql
