@@ -7,7 +7,7 @@ require 'facter'
 require 'socket'
 require 'sequel'
 
-def sqlScanner
+def default
 DB.create_table :scanner do
 	primary_key :id
 	String :name
@@ -23,6 +23,12 @@ DB.create_table :scanner do
 end
 end
 
+def modify
+end
+
+def paranoid
+end
+
 # Grab current directory for scanning
 puts "Getting current directory"
 $dir = Pathname.new(Pathname.pwd())
@@ -31,9 +37,12 @@ threadCount = Facter.processorcount
 #create new Mysql instance and use username and password if non found
 DB = Sequel.sqlite
 
-if ARVG.("-d") == nil
+#grab arg values and parse
+if ARVG =! nil
 	userDir = dir
-
+else
+	userDir = dir
+end
 
 if DB.all == false
 	sqlScanner
