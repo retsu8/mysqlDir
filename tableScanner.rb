@@ -7,16 +7,7 @@ require 'facter'
 require 'socket'
 require 'sequel'
 
-# Grab current directory for scanning
-puts "Getting current directory"
-dir = Pathname.new(Pathname.pwd())
-threadCount = Facter.processorcount
-
-#create new Mysql instance and use username and password if non found
-DB = Sequel.sqlite
-
-posts = DB.from(:scanner)
-
+def sqlScanner
 DB.create_table :scanner do
 	primary_key :id
 	String :name
@@ -30,6 +21,31 @@ DB.create_table :scanner do
 	String :updated_at
 	String :created_at
 end
+end
+
+# Grab current directory for scanning
+puts "Getting current directory"
+$dir = Pathname.new(Pathname.pwd())
+threadCount = Facter.processorcount
+
+#create new Mysql instance and use username and password if non found
+DB = Sequel.sqlite
+
+if ARVG.("-d") == nil
+	userDir = dir
+
+
+if DB.all == false
+	sqlScanner
+end
+
+
+puts "Are you going to (1)create or (2)modify a database"
+$userInput = get.chomp
+
+posts = DB.from(:scanner)
+
+
 
 items = DB[:scanner]
 
@@ -40,12 +56,12 @@ Dir.foreach(dir) do |item|
 	items.insert(:name => File.basename(item), 
 				:path => File.realpath(item),
 				#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
-				:permission => File.world_readable?(item)
-				:ext => File.extname(item)
-				:size => File.size(item)
-				:hash => Digest::MD5.hexdigest(item)
-				:hostname => Socket.gethostname
-				:type => File.ftype(item)
-				:updated_at => File.mtime(item)
-				:created_at => File.ctime(item)
+				:permission => File.world_readable?(item),
+				:ext => File.extname(item),
+				:size => File.size(item),
+				:hash => Digest::MD5.hexdigest(item),
+				:hostname => Socket.gethostname,
+				:type => File.ftype(item),
+				:updated_at => File.mtime(item),
+				:created_at => File.ctime(item))
 end
