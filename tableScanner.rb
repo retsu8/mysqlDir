@@ -7,6 +7,8 @@ require 'facter'
 require 'socket'
 require 'sequel'
 require 'optparse'
+require 'openssl'
+require 'xxhash'
 
 class Checksum
 	def hashType
@@ -23,9 +25,34 @@ class MD5 < Checksum
 		return Digest::md5.hexdigest(h)
 	end
 end
+class SHA1 < Checksum
+	def hashType(h)
+		return OpenSSL::Digest::SHA256.hexdigest(h)
+	end
+end
+class SHA2 < Checksum
+	def hashType(h)
+		return OpenSSL::Digest::SHA384.hexdigest(h)
+	end
+end
+class SHA3 < Checksum
+	def hashType(h)
+		return OpenSSL::Digest::SHA512.hexdigest(h)
+	end
+end
+class RIPEMD160 < Checksum
+	def hashType(h)
+		return OpenSSL::Digest::RIPEMD160.hexdigest(h)
+	end
+end
+class XXHASH < Checksum
+	def hashType(h)
+		return XXHASH.xxh64(h, 98765)
+	end
+end
 
 def paranoid
-	DB.create_table :scanner do
+	DB.create_table :dirScanner do
 		primary_key :id
 		String :name
 		String :path
@@ -38,13 +65,31 @@ def paranoid
 		String :updated_at
 		String :created_at
 	end
+	scanner
 end
 
 def modify
 end
 
 def default
-
+	if DB.all == false
+		DB.create_table :dirScanner do
+			primary_key :id
+			String :name
+			String :path
+			String :permission
+			String :ext
+			Int :size
+			String :hash
+			String :hostname
+			String :type
+			String :updated_at
+			String :created_at
+		end
+	else
+		$posts = DB.from(:scanner)
+	end
+	
 end
 
 def scanner
@@ -54,7 +99,7 @@ def scanner
 	/ attempint polymorphic hash choice
 	hash = Checksum[CRC32.new MD5.new]
 	/
-
+	$items = DB[:dirScanner]
 	Dir.foreach(dir) do |item|
 		next if item == '.' or item == ".."
 		items.insert(:name => File.basename(item), 
@@ -63,7 +108,7 @@ def scanner
 			:permission => File.world_readable?(item),
 			:ext => File.extname(item),
 			:size => File.size(item),
-			:hash => hash(item),
+			:hash => Checksum.hash(item),
 			:hostname => Socket.gethostname,
 			:type => File.ftype(item),
 			:updated_at => File.mtime(item),
@@ -76,10 +121,10 @@ end
 $dir = Pathname.new(Pathname.pwd())
 threadCount = Facter.processorcount
 
-#Instanciate variables
-$DB = Sequel.sqlite
+#Instantiate variables
+$DB = Sequel.sqlite('dirScanner.db')
 $userDir = nil
-$hash = Digest::crc32.hexdigest
+$hash = MD5
 $strategy = default
 
 #grab arg values and parse
@@ -94,11 +139,31 @@ OptionParser.new do |opts|
 	end
 
 	opts.on("-h", "md5", "Run md5 hash check") do |h|
-		$hash = Digest::md5.hexdigest
+		$hash = MD5
 	end
 
 	opts.on("-h", "crc32", "Run crc32 hash check") do |h|
-		$hash = Digest::crc32.hexdigest
+		$hash = CRC32
+	end
+
+	opts.on("-h", "sha256", "Run crc32 hash check") do |h|
+		$hash = SHA1
+	end
+
+	opts.on("-h", "sha384", "Run crc32 hash check") do |h|
+		$hash = SHA2
+	end
+
+	opts.on("-h", "sha512", "Run crc32 hash check") do |h|
+		$hash = SHA3
+	end
+
+	opts.on("-h", "ripemd160", "Run crc32 hash check") do |h|
+		$hash = RIPEMD160
+	end
+
+	opts.on("-h", "xxhash", "Run crc32 hash check") do |h|
+		$hash = XXHASH
 	end
 
 	opts.on("-m", "update", "Update current sqlite database.") do |m|
@@ -111,22 +176,16 @@ OptionParser.new do |opts|
 
 end.parse!
 
+#set directory to use.
 if userDir != nil 
 	dir = userDir
 end
 
+#pick strategy to use
 if strategy == paranoid
-	default
+	paranoid
 elsif  strategy == update
 	modify	
 else
 	default
 end
-
-if DB.all == false
-	sqlScanner
-end
-
-posts = DB.from(:scanner)
-
-items = DB[:scanner]
