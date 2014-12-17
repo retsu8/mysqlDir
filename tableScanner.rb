@@ -6,21 +6,22 @@ require 'digest'
 require 'facter'
 require 'socket'
 require 'sequel'
+require 'optparse'
 
 def default
-DB.create_table :scanner do
-	primary_key :id
-	String :name
-	String :path
-	String :permission
-	String :ext
-	Int :size
-	String :hash
-	String :hostname
-	String :type
-	String :updated_at
-	String :created_at
-end
+	DB.create_table :scanner do
+		primary_key :id
+		String :name
+		String :path
+		String :permission
+		String :ext
+		Int :size
+		String :hash
+		String :hostname
+		String :type
+		String :updated_at
+		String :created_at
+	end
 end
 
 def modify
@@ -28,6 +29,7 @@ end
 
 def paranoid
 end
+
 
 # Grab current directory for scanning
 puts "Getting current directory"
@@ -38,11 +40,33 @@ threadCount = Facter.processorcount
 DB = Sequel.sqlite
 
 #grab arg values and parse
-if ARVG =! nil
-	userDir = dir
-else
-	userDir = dir
-end
+$options = {}
+
+OptionParser.new do |opts|
+
+	opts.banner = "Usage: -d [dir] -h [md5, crc32], -m [default, update, paranoid]"
+
+	opts.on("-d", "" "") do |dir|
+		$userDir = dir
+	end
+
+	opts.on("-h", "md5", "Run md5 hash check") do |md5|
+		$checksum = md5
+	end
+
+	opts.on("-h", "crc32", "Run crc32 hash check") do |crc32|
+		$checksum =crc32
+	end
+
+	opts.on("-m", "update", "Update current sqlite database.") do |update|
+		$strategy = update
+	end
+
+	opts.on("-m", "paranoid", "Rebuilding sqlite database.") do |paranoid|
+		$strategy = paranoid
+	end
+
+end.parse!
 
 if DB.all == false
 	sqlScanner
