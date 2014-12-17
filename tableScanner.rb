@@ -8,6 +8,22 @@ require 'socket'
 require 'sequel'
 require 'optparse'
 
+class Checksum
+	def hashType
+		return ""
+	end
+end
+class CRC32 < Checksum
+	def hashType(h)
+		return Digest::crc32.hexdigest(h)
+	end
+end
+class MD5 < Checksum
+	def hashType(h)
+		return Digest::md5.hexdigest(h)
+	end
+end
+
 def paranoid
 	DB.create_table :scanner do
 		primary_key :id
@@ -22,7 +38,6 @@ def paranoid
 		String :updated_at
 		String :created_at
 	end
-	scanner
 end
 
 def modify
@@ -35,24 +50,24 @@ end
 def scanner
 	# Scan directory and add information to array for each file found
 	puts "Scanning for directory information"
+	puts "Hashing in " hash "."
+	/ attempint polymorphic hash choice
+	hash = Checksum[CRC32.new MD5.new]
+	/
+
 	Dir.foreach(dir) do |item|
 		next if item == '.' or item == ".."
-		if checksum == crc32
-			Digest::crc32.hexdigest(item)
-		else
-			Digest::MD5.hexdigest(item)
-		end
 		items.insert(:name => File.basename(item), 
-				:path => File.realpath(item),
-				#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
-				:permission => File.world_readable?(item),
-				:ext => File.extname(item),
-				:size => File.size(item),
-				:hash => checksum,
-				:hostname => Socket.gethostname,
-				:type => File.ftype(item),
-				:updated_at => File.mtime(item),
-				:created_at => File.ctime(item))
+			:path => File.realpath(item),
+			#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+			:permission => File.world_readable?(item),
+			:ext => File.extname(item),
+			:size => File.size(item),
+			:hash => hash(item),
+			:hostname => Socket.gethostname,
+			:type => File.ftype(item),
+			:updated_at => File.mtime(item),
+			:created_at => File.ctime(item))
 	end
 end
 
@@ -64,7 +79,7 @@ threadCount = Facter.processorcount
 #Instanciate variables
 $DB = Sequel.sqlite
 $userDir = nil
-$checksum = md5
+$hash = Digest::crc32.hexdigest
 $strategy = default
 
 #grab arg values and parse
@@ -79,11 +94,11 @@ OptionParser.new do |opts|
 	end
 
 	opts.on("-h", "md5", "Run md5 hash check") do |h|
-		$checksum = "md5"
+		$hash = Digest::md5.hexdigest
 	end
 
 	opts.on("-h", "crc32", "Run crc32 hash check") do |h|
-		$checksum ="crc32"
+		$hash = Digest::crc32.hexdigest
 	end
 
 	opts.on("-m", "update", "Update current sqlite database.") do |m|
