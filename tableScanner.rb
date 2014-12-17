@@ -51,24 +51,16 @@ class XXHASH < Checksum
 	end
 end
 
-def paranoid
-	DB.create_table :dirScanner do
-		primary_key :id
-		String :name
-		String :path
-		String :permission
-		String :ext
-		Int :size
-		String :hash
-		String :hostname
-		String :type
-		String :updated_at
-		String :created_at
-	end
-	scanner
-end
-
 def modify
+	DB.update
+	$items = DB[:dirScanner]
+	Dir.foreach(dir) do |item|
+		next if item == '.' or item == ".."
+		items.insert(:path => File.realpath(item),
+			:size => File.size(item),
+			:hostname => Socket.gethostname))
+	end
+	end
 end
 
 def default
@@ -87,7 +79,8 @@ def default
 			String :created_at
 		end
 	else
-		$posts = DB.from(:scanner)
+		$posts = DB.from(:dirScanner)
+		modify
 	end
 	
 end
@@ -96,9 +89,6 @@ def scanner
 	# Scan directory and add information to array for each file found
 	puts "Scanning for directory information"
 	puts "Hashing in " hash "."
-	/ attempint polymorphic hash choice
-	hash = Checksum[CRC32.new MD5.new]
-	/
 	$items = DB[:dirScanner]
 	Dir.foreach(dir) do |item|
 		next if item == '.' or item == ".."
@@ -166,11 +156,7 @@ OptionParser.new do |opts|
 		$hash = XXHASH
 	end
 
-	opts.on("-m", "update", "Update current sqlite database.") do |m|
-		$strategy = "update"
-	end
-
-	opts.on("-m", "paranoid", "Rebuild sqlite database.") do |m|
+	opts.on("-p", "Rebuild sqlite database.") do |m|
 		$strategy = "paranoid"
 	end
 
@@ -184,8 +170,6 @@ end
 #pick strategy to use
 if strategy == paranoid
 	paranoid
-elsif  strategy == update
-	modify	
 else
 	default
 end
