@@ -56,6 +56,7 @@ def modify
 	$items = DB[:dirScanner]
 	Dir.foreach(dir) do |item|
 		next if item == '.' or item == ".."
+		if 
 		items.insert(:path => File.realpath(item),
 			:size => File.size(item),
 			:hostname => Socket.gethostname))
@@ -72,11 +73,11 @@ def default
 			String :permission
 			String :ext
 			Int :size
-			String :hash
 			String :hostname
 			String :type
 			String :updated_at
 			String :created_at
+			String :hash
 		end
 	else
 		$posts = DB.from(:dirScanner)
@@ -109,7 +110,7 @@ end
 
 # Grab current directory for scanning
 $dir = Pathname.new(Pathname.pwd())
-threadCount = Facter.processorcount
+$threadCount = Facter.processorcount
 
 #Instantiate variables
 $DB = Sequel.sqlite('dirScanner.db')
@@ -122,9 +123,9 @@ $options = {}
 
 OptionParser.new do |opts|
 
-	opts.banner = "Usage: -d [dir] -h [md5, crc32], -m [default, update, paranoid]"
+	opts.banner = "Usage: -d [dir] -h [md5, crc32, sha256, sha384, sha512, ripem160, xxhash], -p [paranoid mode]"
 
-	opts.on("-d", "" "") do |d|
+	opts.on("-d", ".", "Get the directory from the user") do |d|
 		$userDir = d
 	end
 
