@@ -52,15 +52,31 @@ class XXHASH < Checksum
 end
 
 def modify
-	DB.update
 	$items = DB[:dirScanner]
 	Dir.foreach(dir) do |item|
 		next if item == '.' or item == ".."
-		if 
-		items.insert(:path => File.realpath(item),
+		selection = items.select path
+		if (File.realpath(item) == selection
+			selection = items.select size
+			if File.size(item) == selection)
+				selection = items.select host
+				if File.gethostname == selection
+					return true
+				end
+			end
+		else
+			items.update(:name => File.basename(item), 
+			:path => File.realpath(item),
+			#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+			:permission => File.world_readable?(item),
+			:ext => File.extname(item),
 			:size => File.size(item),
-			:hostname => Socket.gethostname))
-	end
+			:hash => Checksum.hash(item),
+			:hostname => Socket.gethostname,
+			:type => File.ftype(item),
+			:updated_at => File.mtime(item),
+			:created_at => File.ctime(item))			
+		end
 	end
 end
 
