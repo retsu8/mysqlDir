@@ -59,27 +59,16 @@ class XXHASH < Checksum
 end
 
 def modify
-  $items = DB[:dirScanner].order(:name)
-  Dir.foreach(dir) do |item|
-    next if item in ['.','..']
-    selection = items.where(:path => item)
-    # i think what you want is something like:
-    # if paranoid
-    #   rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname, :hash => Checksum::MD5.hashtype(full pathname of the item))
-    # else
-    #   rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname)
-    # end
-    # if rows.empty?
-    #   insert the file info plus the hash!
-    # end
-    unless (File.realpath(item) == items.where(:size => item)) && (File.size(item) == items.where(:size => size)) && (File.gethostname == items.where(:host => File.gethostname))
-      update
-    end
-  end
+$items = DB[:dirScanner].order(:name)
+Dir.foreach(dir) do |item|
+  next if item == '.' or item == ".."
+  selection = items.where(:path => item)
+  if (File.realpath(item) == items.where(:size => item)) & (File.size(item) == items.where(:size => size)) & (File.gethostname == items.where(:host => File.gethostname))
+  else (update)
 end
 
 def default
-  if DB.all == false #TODO: check to see if the dirScanner table exists
+  if DB.all == false
     DB.create_table :dirScanner do
       primary_key :id
       String :name
@@ -97,45 +86,42 @@ def default
   else
     $posts = DB.from(:dirScanner)
     modify
-  end
+end
+
 end
 
 def scanner
-  # Scan directory and add information to array for each file found
-  puts "Scanning for directory information" #TODO: this should only happen if verbose is on
-  $items = DB[:dirScanner]
-  Dir.foreach(dir) do |item|
-  	next if item == '.' or item == ".."
-  	items.insert(:name => File.basename(item), 
-  		:path => File.realpath(item),
-  		#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
-  		:permission => File.world_readable?(item),
-  		:ext => File.extname(item),
-  		:size => File.size(item),
-  		:hash => Checksum.hash(item),  # this can't work, so.... it looks 
-  		:hostname => Socket.gethostname,
-  		:type => File.ftype(item),
-  		:updated_at => File.mtime(item),
-  		:created_at => File.ctime(item)
-    )
-  end
+# Scan directory and add information to array for each file found
+puts "Scanning for directory information"
+$items = DB[:dirScanner]
+Dir.foreach(dir) do |item|
+	next if item == '.' or item == ".."
+	items.insert(:name => File.basename(item), 
+		:path => File.realpath(item),
+		#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+		:permission => File.world_readable?(item),
+		:ext => File.extname(item),
+		:size => File.size(item),
+		:hash => Checksum.hash(item),
+		:hostname => Socket.gethostname,
+		:type => File.ftype(item),
+		:updated_at => File.mtime(item),
+		:created_at => File.ctime(item))
+	end
 end
 
 def update
-  #line 78 Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
-  # you want something like:
-  # item = items.where(criteria....)
-
-  items.update(:name => File.basename(item))
-  items.update(:path => File.realpath(item))
-  items.update(:permission => File.world_readable?(item))
-  items.update(:ext => File.extname(item))
-  items.update(:size => File.size(item))
-  items.update(:hash => Checksum.hash(item))
-  items.update(:hostname => Socket.gethostname)
-  items.update(:type => File.ftype(item))
-  items.update(:updated_at => File.mtime(item))
-  items.update(:created_at => File.ctime(item))	
+    #line 78 Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+    items.update(:name => File.basename(item))
+    items.update(:path => File.realpath(item))
+    items.update(:permission => File.world_readable?(item))
+    items.update(:ext => File.extname(item))
+    items.update(:size => File.size(item))
+    items.update(:hash => Checksum.hash(item))
+    items.update(:hostname => Socket.gethostname)
+    items.update(:type => File.ftype(item))
+    items.update(:updated_at => File.mtime(item))
+    items.update(:created_at => File.ctime(item))	
 end
 
 
@@ -203,7 +189,7 @@ end.parse!
 
 #set directory to use.
 if userDir != nil 
-  dir = userDir
+dir = userDir
 end
 
 #pick strategy to use
@@ -217,4 +203,4 @@ end
 t2 = Time.now
 t3 = t2-t1
 
-puts t3.to_i
+puts "Your processing time is " + t3.to_s + "."
