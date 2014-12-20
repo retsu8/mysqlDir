@@ -11,50 +11,25 @@ require 'openssl'
 require 'xxhash'
 
 class Checksum
-  def hashType
-    return ""
-  end
-end
-
-class CRC32 < Checksum
   def hashType(h)
-    return Digest::crc32.hexdigest(h)
-  end
-end
-
-class MD5 < Checksum
-  def hashType(h)
-    return Digest::md5.hexdigest(h)
-  end
-end
-
-class SHA1 < Checksum
-  def hashType(h)
-    return OpenSSL::Digest::SHA256.hexdigest(h)
-  end
-end
-
-class SHA2 < Checksum
-  def hashType(h)
-    return OpenSSL::Digest::SHA384.hexdigest(h)
-  end
-end
-
-class SHA3 < Checksum
-  def hashType(h)
-    return OpenSSL::Digest::SHA512.hexdigest(h)
-  end
-end
-
-class RIPEMD160 < Checksum
-  def hashType(h)
-    return OpenSSL::Digest::RIPEMD160.hexdigest(h)
-  end
-end
-
-class XXHASH < Checksum
-  def hashType(h)
-    return XXHASH.xxh64(h, 98765)
+    case hash
+      when 'CRC32' 
+        Digest::crc32.hexdigest(h)
+      when 'MD5'
+        Digest::md5.hexdigest(h)
+      when 'SHA1'
+        OpenSSL::Digest::SHA256.hexdigest(h)
+      when 'SHA2'
+        OpenSSL::Digest::SHA384.hexdigest(h)
+      when 'SHA3'
+        OpenSSL::Digest::SHA512.hexdigest(h)
+      when 'RIPEMD160'
+        OpenSSL::Digest::RIPEMD160.hexdigest(h)
+      when 'XXHASH'
+        XXHASH.xxh64(h, 98765)
+      else
+        Digest::md5.hexdigest(h)
+      end
   end
 end
 
@@ -63,6 +38,7 @@ def modify
   Dir.foreach(dir) do |item|
     next if item in ['.','..']
     selection = items.where(:path => item)
+      if paranoid == true
     # i think what you want is something like:
     # if paranoid
     #   rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname, :hash => Checksum::MD5.hashtype(full pathname of the item))
@@ -147,7 +123,7 @@ $dir = Pathname.new(Pathname.pwd())
 $threadCount = Facter.processorcount
 
 #Instantiate variables
-$DB = Sequel.sqlite('dirScanner.db')
+$DB = Sequel.mysql('dirScanner.db')
 $userDir = nil
 $hash = MD5
 $strategy = "default"
@@ -157,42 +133,46 @@ $options = {}
 
 OptionParser.new do |opts|
 
-opts.banner = "Usage: -d [dir] -h [md5, crc32, sha256, sha384, sha512, ripem160, xxhash], -p [paranoid mode]"
+opts.banner = "Usage: -d [dir] -s [modify] -h [md5, crc32, sha256, sha384, sha512, ripem160, xxhash] -p -v"
 
   opts.on("-d", ".", "Get the directory from the user") do |d|
     $userDir = d
   end
 
+  opts.on("-s", ".", "Get the directory from the user") do |d|
+    $strategy = 'modify'
+  end
+
   opts.on("-h", "md5", "Run md5 hash check") do |h|
-    $hash = MD5
+    $hash = 'MD5'
   end
 
   opts.on("-h", "crc32", "Run crc32 hash check") do |h|
-    $hash = CRC32
+    $hash = 'CRC32'
   end
 
   opts.on("-h", "sha256", "Run crc32 hash check") do |h|
-    $hash = SHA1
+    $hash = 'SHA1'
   end
 
   opts.on("-h", "sha384", "Run crc32 hash check") do |h|
-    $hash = SHA2
+    $hash = 'SHA2'
   end
 
   opts.on("-h", "sha512", "Run crc32 hash check") do |h|
-    $hash = SHA3
+    $hash = 'SHA3'
   end
 
   opts.on("-h", "ripemd160", "Run crc32 hash check") do |h|
-	$hash = RIPEMD160
+	$hash = 'RIPEMD160'
   end
 
   opts.on("-h", "xxhash", "Run crc32 hash check") do |h|
-	$hash = XXHASH
+	$hash = 'XXHASH'
   end
 
   opts.on("-p", "Rebuild sqlite database.") do |m|
-	$strategy = "paranoid"
+	@options[:paranoid] = true
   end
 
   opts.on("-v", "--verbose", "verbose mode") do
@@ -206,9 +186,9 @@ if userDir != nil
   dir = userDir
 end
 
-#pick strategy to use
-if strategy == "paranoid" 
-	paranoid
+#add paranoid if selected
+if strategy == "modify" 
+	modify
 else 
 	default
 end
