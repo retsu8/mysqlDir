@@ -36,21 +36,32 @@ end
 def modify
   $items = DB[:dirScanner].order(:name)
   Dir.foreach(dir) do |item|
-    next if item in ['.','..']
+    next if ['.','..'].include?(item)
     selection = items.where(:path => item)
       if paranoid == true
+        $rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname, :hash => Checksum.hashtype(File.realpath(items)))
     # i think what you want is something like:
     # if paranoid
-    #   rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname, :hash => Checksum::MD5.hashtype(full pathname of the item))
-    # else
-    #   rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname)
-    # end
-    # if rows.empty?
-    #   insert the file info plus the hash!
-    # end
-    unless (File.realpath(item) == items.where(:size => item)) && (File.size(item) == items.where(:size => size)) && (File.gethostname == items.where(:host => File.gethostname))
-      update
-    end
+    #   
+      else
+         rows = items.where(:size => File.size(item), :path => File.realpath(item), :name => item, :host => File.gethostname)
+      end
+      if rows.empty?
+          items.insert(:name => File.basename(item), 
+            :path => File.realpath(item),
+            #Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+            :permission => File.world_readable?(item),
+            :ext => File.extname(item),
+            :size => File.size(item),
+            :hash => Checksum.hash(item),  # this can't work, so.... it looks 
+            :hostname => Socket.gethostname,
+            :type => File.ftype(item),
+            :updated_at => File.mtime(item),
+            :created_at => File.ctime(item)
+          )
+      else
+        update(item)
+      end
   end
 end
 
@@ -77,27 +88,48 @@ def default
 end
 
 def scanner
-  # Scan directory and add information to array for each file found
-  puts "Scanning for directory information" #TODO: this should only happen if verbose is on
-  $items = DB[:dirScanner]
-  Dir.foreach(dir) do |item|
-  	next if item == '.' or item == ".."
-  	items.insert(:name => File.basename(item), 
-  		:path => File.realpath(item),
-  		#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
-  		:permission => File.world_readable?(item),
-  		:ext => File.extname(item),
-  		:size => File.size(item),
-  		:hash => Checksum.hash(item),  # this can't work, so.... it looks 
-  		:hostname => Socket.gethostname,
-  		:type => File.ftype(item),
-  		:updated_at => File.mtime(item),
-  		:created_at => File.ctime(item)
-    )
+  def find_files(dir = Pathname.pwd)
+    Dir.foreach(dir) do |f|
+      next if ['.','..'].include?(f)
+      current_file = dir + f
+      if File.directory?(current_file)
+        find_files(current_file)
+      else
+        items.insert(:name => File.basename(item), 
+        :path => File.realpath(item),
+        #Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+        :permission => File.world_readable?(item),
+        :ext => File.extname(item),
+        :size => File.size(item),
+        :hash => Checksum.hashType(item),  #recheck to make sure it works
+        :hostname => Socket.gethostname,
+        :type => File.ftype(item),
+        :updated_at => File.mtime(item),
+        :created_at => File.ctime(item))
+      end
+    end
   end
+  # Scan directory and add information to array for each file found
+  /if verbose == true 
+      puts "Scanning for directory information"
+  $items = DB[:dirScanner]
+    Dir.foreach(dir) do |item|
+    	 next if ['.','..'].include?(item)
+    	items.insert(:name => File.basename(item), 
+    		:path => File.realpath(item),
+    		#Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
+    		:permission => File.world_readable?(item),
+    		:ext => File.extname(item),
+    		:size => File.size(item),
+    		:hash => Checksum.hashType(item),  #recheck to make sure it works
+    		:hostname => Socket.gethostname,
+    		:type => File.ftype(item),
+    		:updated_at => File.mtime(item),
+    		:created_at => File.ctime(item)
+        )
+    end/
 end
-
-def update
+def update(item)
   #line 78 Gathers information on readablity of file via world readable, returns 3 digit callulation, will be looking for a better return value
   # you want something like:
   # item = items.where(criteria....)
@@ -186,7 +218,7 @@ if userDir != nil
   dir = userDir
 end
 
-#add paranoid if selected
+#add modify if selected
 if strategy == "modify" 
 	modify
 else 
