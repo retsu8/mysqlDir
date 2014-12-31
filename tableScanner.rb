@@ -8,7 +8,7 @@ require 'socket'
 require 'sequel'
 require 'optparse'
 require 'openssl'
-require 'xxhash'
+require 'ruby-xxHash'
 
 class Checksum
   def hashType(h)
@@ -26,7 +26,7 @@ class Checksum
       when 'RIPEMD160'
         OpenSSL::Digest::RIPEMD160(h)
       when 'XXHASH'
-        XXHASH.xxh64(h, 98765)
+        XXhash.xxh32(h, 98765)
       else
         Digest::md5(h)
       end
