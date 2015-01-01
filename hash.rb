@@ -13,6 +13,6 @@ else
   end
 
   puts 'The hash is '
-  puts XXhash.xxh32(file, seed)
-  
+  puts XXhash.xxh64(file, seed.delete(',').to_i)
+
 end

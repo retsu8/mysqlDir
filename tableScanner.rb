@@ -14,21 +14,21 @@ class Checksum
   def hashType(h)
     case hash
       when 'CRC32' 
-        Digest::crc32(h)
+        return Digest::crc32(h)
       when 'MD5'
-        Digest::md5(h)
+        return Digest::md5(h)
       when 'SHA1'
-        OpenSSL::Digest::SHA256(h)
+        return OpenSSL::Digest::SHA256(h)
       when 'SHA2'
-        OpenSSL::Digest::SHA384(h)
+        return OpenSSL::Digest::SHA384(h)
       when 'SHA3'
-        OpenSSL::Digest::SHA512(h)
+        return OpenSSL::Digest::SHA512(h)
       when 'RIPEMD160'
-        OpenSSL::Digest::RIPEMD160(h)
+        return OpenSSL::Digest::RIPEMD160(h)
       when 'XXHASH'
-        XXhash.xxh32(h, 98765)
+        return XXhash.xxh64(h, 98765)
       else
-        Digest::md5(h)
+        return Digest::md5(h)
       end
   end
 end
