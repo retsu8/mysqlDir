@@ -1,0 +1,97 @@
+tableScanner
+
+class Checksum
+  def hashType
+    case hash
+      when "usage"
+    end
+  end
+end
+
+def modify
+  items = table.db
+    scan dir for item
+      if paranoid
+        check size, path, name, host, and hash
+      else
+        check size, path, name, and host
+      if new
+        add info on item
+      if current
+        update item
+end
+
+def default
+  if DB == empty
+    create table
+      ID
+      name
+      path
+      permission
+      ext
+      size
+      hostname
+      type
+      updated at
+      created at
+      hash
+    end
+    scanner
+  else
+    modify
+end
+
+def scanner
+  def find_files(dir)
+    foreach item
+      next if '.','..'
+        if file is directory
+          find_files(current_file)
+        else
+          insert items
+      end
+    end
+  end
+end
+
+def update(item)
+  item.update
+end
+
+
+time1 = get start time
+dir = current
+threadcount = processorcount
+
+userDir = nil
+hash = md5
+strategy = default
+
+options[]{
+-d = set user directory
+-s = set strategy to modify, default is modify datasets and add new ones, delete missing
+-h = choose hashing algorthinm, default md5
+-p = paranoid mode, redo hash checking
+-v = verbose mode
+}
+
+
+if table.db exists
+  import table.db
+else
+  create table.db
+
+if userDir != nil
+  dir = userDir
+end
+
+if strategy == "modify"
+  modify
+else
+  default
+end
+
+t2 = time.now
+t3 = t2 -t1
+
+puts t3

@@ -88,7 +88,7 @@ def default
 end
 
 def scanner
-  def find_files(dir = Pathname.pwd)
+  def find_files(dir)
     Dir.foreach(dir) do |f|
       next if ['.','..'].include?(f)
       current_file = dir + f
@@ -134,16 +134,16 @@ def update(item)
   # you want something like:
   # item = items.where(criteria....)
 
-  items.update(:name => File.basename(item))
-  items.update(:path => File.realpath(item))
-  items.update(:permission => File.world_readable?(item))
-  items.update(:ext => File.extname(item))
-  items.update(:size => File.size(item))
-  items.update(:hash => Checksum.hash(item))
-  items.update(:hostname => Socket.gethostname)
-  items.update(:type => File.ftype(item))
-  items.update(:updated_at => File.mtime(item))
-  items.update(:created_at => File.ctime(item))	
+  item.update(:name => File.basename(item))
+  item.update(:path => File.realpath(item))
+  item.update(:permission => File.world_readable?(item))
+  item.update(:ext => File.extname(item))
+  item.update(:size => File.size(item))
+  item.update(:hash => Checksum.hash(item))
+  item.update(:hostname => Socket.gethostname)
+  item.update(:type => File.ftype(item))
+  item.update(:updated_at => File.mtime(item))
+  item.update(:created_at => File.ctime(item))	
 end
 
 
